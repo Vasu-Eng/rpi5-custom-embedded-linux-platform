@@ -1,0 +1,62 @@
+# ==========================
+
+# Build Artifacts
+
+# ==========================
+
+*.o
+*.a
+*.so
+*.cmd
+*.tmp
+*.su
+*.d
+*.elf
+
+# ==========================
+
+# BusyBox Generated Files
+
+# ==========================
+
+busybox_src_code/busybox
+busybox_src_code/busybox_unstripped
+busybox_src_code/busybox.links
+busybox_src_code/.config.old
+
+# ==========================
+
+# Editor Files
+
+# ==========================
+
+*~
+*.swp
+*.swo
+
+# ==========================
+
+# Logs
+
+# ==========================
+
+*.log
+
+# ==========================
+
+# Archives
+
+# ==========================
+
+*.cpio
+*.cpio.gz
+
+# ==========================
+
+# Temporary Files
+
+# ==========================
+
+tmp/
+*.bak
+
