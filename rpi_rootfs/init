@@ -4,9 +4,14 @@ mount -t devtmpfs devtmpfs /dev
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 
+BOOT_TIME=$(cut -d' ' -f1 /proc/uptime)
+
+echo
 echo "================================"
-echo " Raspberry Pi 5 Custom Linux "
+echo " Raspberry Pi 5 Custom Linux"
+echo " Release : v0.0.1"
+echo " Boot Time: ${BOOT_TIME}s"
 echo "================================"
-echo "...... Boot successful ........."
+echo
 
 exec /bin/sh
