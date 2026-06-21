@@ -240,7 +240,7 @@ group1 in Dropbear server too */
 
 /* Authentication Types - at least one required.
    RFC Draft requires pubkey auth, and recommends password */
-#define DROPBEAR_SVR_PASSWORD_AUTH 1
+#define DROPBEAR_SVR_PASSWORD_AUTH 0
 
 /* Note: PAM auth is quite simple and only works for PAM modules which just do
  * a simple "Login: " "Password: " (you can edit the strings in svr-authpam.c).
@@ -264,7 +264,7 @@ group1 in Dropbear server too */
 #define DROPBEAR_SVR_MULTIUSER 1
 
 /* Client authentication options */
-#define DROPBEAR_CLI_PASSWORD_AUTH 1
+#define DROPBEAR_CLI_PASSWORD_AUTH 0
 #define DROPBEAR_CLI_PUBKEY_AUTH 1
 
 /* A default argument for dbclient -i <privatekey>.
