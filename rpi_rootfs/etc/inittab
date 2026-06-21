@@ -3,7 +3,7 @@
 #user defined banner 
 ::once:/usr/bin/banner
 
-console::askfirst:/bin/cttyhack /bin/ash
+console::askfirst:/bin/cttyhack /bin/login
 
 
 #do this before poweroff
