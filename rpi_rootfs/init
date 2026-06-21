@@ -1,8 +1,15 @@
 #!/bin/sh
 
-mount -t devtmpfs devtmpfs /dev
-mount -t proc proc /proc
-mount -t sysfs sysfs /sys
+#mount vertual file system from /etc/fstab
+mount -a
+
+#create standard directories
+
+mkdir -p /var/log
+mkdir -p /var/run
+mkdir -p /var/tmp
+
+#clear
 
 BOOT_TIME=$(cut -d' ' -f1 /proc/uptime)
 
@@ -13,5 +20,24 @@ echo " Release : v0.0.1"
 echo " Boot Time: ${BOOT_TIME}s"
 echo "================================"
 echo
+
+#show kernel information
+uname -a
+echo
+
+#verify mounted filesystem "
+
+echo "[INFO] Mounted filesystems:"
+mount
+echo
+
+
+if [ -x /etc/init.d/rcS ]; then
+    echo "[INFO] Running rcS"
+   /etc/init.d/rcS
+else
+    echo "[WARN] /etc/init.d/rcS missing or not executable"
+fi
+
 
 exec /bin/sh
