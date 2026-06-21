@@ -1,43 +1,20 @@
 #!/bin/sh
 
-#mount vertual file system from /etc/fstab
+
+# mount virtual file systems from /etc/fstab
 mount -a
 
-#create standard directories
+# explicitly creating /dev/pts as it is failing  with fstab
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts || echo "devpts mount failed"
 
-mkdir -p /var/log
-mkdir -p /var/run
-mkdir -p /var/tmp
 
-#clear
-
-BOOT_TIME=$(cut -d' ' -f1 /proc/uptime)
-
-echo
-echo "================================"
-echo " Raspberry Pi 5 Custom Linux"
-echo " Release : v0.0.1"
-echo " Boot Time: ${BOOT_TIME}s"
-echo "================================"
-echo
-
-#show kernel information
-uname -a
-echo
-
-#verify mounted filesystem "
 
 echo "[INFO] Mounted filesystems:"
 mount
 echo
 
+# Allow kernel messages to finish printing 
+sleep 2
 
-if [ -x /etc/init.d/rcS ]; then
-    echo "[INFO] Running rcS"
-   /etc/init.d/rcS
-else
-    echo "[WARN] /etc/init.d/rcS missing or not executable"
-fi
-
-
-exec /bin/sh
+exec /sbin/init
