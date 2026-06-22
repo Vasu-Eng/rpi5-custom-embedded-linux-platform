@@ -1,0 +1,22 @@
+#!/bin/sh
+
+echo "udhcpc event: $1"
+
+case "$1" in
+    deconfig)
+        echo "Clearing IP on $interface"
+        ifconfig $interface 0.0.0.0
+        ;;
+
+    bound|renew)
+        echo "Assigning $ip to $interface"
+        ifconfig $interface $ip netmask $subnet
+
+        if [ -n "$router" ]; then
+            echo "Adding gateway $router"
+            route add default gw $router dev $interface
+        fi
+        ;;
+esac
+
+exit 0
