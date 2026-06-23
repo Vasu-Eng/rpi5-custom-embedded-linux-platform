@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [v0.1.3]
+
+### Added
+
+* Ethernet startup service
+* DHCP client integration using udhcpc
+* Static IP fallback mechanism
+* Dropbear SSH daemon
+* SSH host key generation workflow
+* Public-key authentication support
+* `/etc/shells` configuration
+* SSH permission initialization script
+
+### Fixed
+
+* Missing udhcpc default script execution
+* SSH authentication failures
+* Invalid shell rejection by Dropbear
+* Root SSH permission validation issues
+
+### Improved
+
+* Boot-time diagnostics
+* Network configuration visibility
+* Rootfs packaging process
+
+
 ---
 
 ## [v0.1.2] - Structured System Startup Framework

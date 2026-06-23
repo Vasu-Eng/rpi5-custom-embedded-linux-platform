@@ -1,12 +1,23 @@
 #!/bin/sh
 
 
-# mount virtual file systems from /etc/fstab
-mount -a
+# mount  vertual using fstab 
+# mount -a
 
 # explicitly creating /dev/pts as it is failing  with fstab
+mkdir -p /dev
+mount -t devtmpfs devtmpfs /dev || echo "/dev mount failed"
+
+mkdir -p /proc
+mount -t proc proc /proc    || echo "/proc mount failed" 
+mkdir -p /sys
+mount -t sysfs sysfs /sys    || echo "/sys mount failed" 
+mkdir -p /tmp
+mount -t tmpfs tmpfs /tmp    || echo "/tmp mount failed" 
 mkdir -p /dev/pts
-mount -t devpts devpts /dev/pts || echo "devpts mount failed"
+mount -t devpts devpts /dev/pts || echo "/dev/pts mount failed"
+mkdir -p /run
+mount -t tmpfs tmpfs /run  || echo "/run mount  failed"
 
 
 
@@ -15,6 +26,7 @@ mount
 echo
 
 # Allow kernel messages to finish printing 
-sleep 2
+#sleep 2
 
+echo "[INFO] Switching to BusyBox init..."
 exec /sbin/init

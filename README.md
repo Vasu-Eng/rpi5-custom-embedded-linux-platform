@@ -1,244 +1,220 @@
-# Raspberry Pi 5 Custom Linux Image
+# Raspberry Pi 5 BSP Development and Embedded Linux Bring-Up
 
-Custom Embedded Linux image for Raspberry Pi 5 built from first principles without Buildroot or Yocto.
+A hands-on Board Support Package (BSP) and Embedded Linux development project focused on understanding and building a complete Linux software stack from first principles.
 
-This project focuses on platform bring-up, Linux boot flow analysis, root filesystem construction, userspace initialization, and BSP-level system integration. The objective is to develop a practical understanding of the complete software stack that transforms a powered-off board into a functional Linux system.
+This repository documents the engineering process of bringing up a Linux system on Raspberry Pi 5 without initially relying on Buildroot or Yocto. Every subsystem is integrated, debugged, and documented manually to gain a deep understanding of Linux boot architecture, platform bring-up, networking, remote access, root filesystem design, and BSP development workflows.
 
----
-
-## Overview
-
-The repository follows a staged development approach, progressing from a minimal RAM-based Linux image to a production-style Embedded Linux platform.
-
-Key focus areas include:
-
-* Linux boot architecture
-* Raspberry Pi 5 platform bring-up
-* BusyBox integration
-* Initramfs development
-* Root filesystem design
-* Device Tree integration
-* UART-based debugging
-* Networking and remote access
-* Embedded Linux BSP workflows
+The long-term objective is to evolve this platform into a production-style Embedded Linux distribution using Buildroot and Yocto while documenting every engineering decision, debugging session, and architectural milestone.
 
 ---
 
-## Key Accomplishments
+# Project Goals
 
-### Platform Bring-Up
+This repository is designed to demonstrate practical skills commonly required for:
 
-* Cross-compiled BusyBox for ARM64
-* Constructed a custom root filesystem from scratch
-* Implemented a custom `/init` process
-* Generated and integrated an initramfs image
-* Integrated Raspberry Pi 5 kernel, DTB, and overlays
-* Configured firmware boot flow using `config.txt` and `cmdline.txt`
-* Validated complete boot sequence through UART
-* Achieved successful boot to an interactive BusyBox shell
+* Embedded Linux Engineer
+* BSP Engineer
+* Firmware Engineer
+* Linux Systems Engineer
+* Platform Software Engineer
 
----
+Target skill areas include:
 
-## System Architecture
-
-```text
-Power On
-   │
-   ▼
-Boot ROM
-   │
-   ▼
-EEPROM Bootloader
-   │
-   ▼
-Raspberry Pi Firmware
-   │
-   ├── config.txt
-   ├── cmdline.txt
-   ├── Device Tree Blob (DTB)
-   ├── Device Tree Overlays
-   └── Linux Kernel Image
-   │
-   ▼
-Linux Kernel
-   │
-   ▼
-Initramfs / Root Filesystem
-   │
-   ▼
-Custom Init Process
-   │
-   ▼
-BusyBox Userspace
-```
+* Linux Boot Process
+* ARM64 Platform Bring-Up
+* Device Tree
+* Root Filesystem Engineering
+* Networking
+* Secure Remote Access
+* Build Systems
+* Debugging Methodology
+* Production Linux BSP Workflows
 
 ---
 
-## Branch Strategy
+# Current Features
 
-### initramfs
+## Linux Bring-Up
 
-RAM-based Linux image used for early platform validation and bring-up.
-
-Characteristics:
-
-* Single FAT32 boot partition
-* BusyBox userspace
+* ARM64 Linux Kernel Boot
+* Raspberry Pi 5 Device Tree Integration
+* UART Console Bring-Up
+* BusyBox Userspace
+* Custom Initramfs
 * Custom `/init`
-* Initramfs (`rootfs.cpio.gz`)
-* UART-first debug workflow
+* Interactive Shell Access
 
-Primary objectives:
+## Root Filesystem
 
-* Kernel validation
-* Device Tree validation
-* Root filesystem construction
-* Early userspace bring-up
-* Service integration
+* BusyBox-based Root Filesystem
+* Custom Directory Structure
+* Initramfs Packaging
+* Ownership and Permission Handling
+* Root User Configuration
 
-### ext4-rootfs
+## Networking
 
-Persistent storage-based Linux image.
+* Ethernet Bring-Up
+* DHCP Client Integration (`udhcpc`)
+* Static IP Fallback Mechanism
+* Network Diagnostics
+* Interface Validation
 
-Characteristics:
+## Remote Access
 
-* Dedicated boot partition
-* Dedicated ext4 root filesystem
-* Persistent configuration and logs
-* Production-style deployment model
-
-Primary objectives:
-
-* Root filesystem mounting
-* Storage management
-* Service persistence
-* System integration
+* Dropbear SSH Server
+* Public Key Authentication
+* Host Key Generation
+* Authorized Keys Management
+* SSH Permission Validation
+* Headless Remote Access
 
 ---
 
-## Engineering Decisions
+# Engineering Topics Investigated
 
-### Why BusyBox
+This project includes practical investigation and debugging of:
 
-BusyBox provides a compact and predictable userspace suitable for early bring-up and embedded deployments. It minimizes dependency complexity while still providing the essential Linux utilities required for system validation.
-
-### Why Initramfs First
-
-Initramfs removes storage-mount dependencies during initial development. This simplifies debugging and accelerates platform bring-up by allowing the complete root filesystem to be loaded directly into memory.
-
-### Why UART-First Debugging
-
-UART remains available even when networking, display, or storage subsystems are not operational. It provides the most reliable interface for observing kernel and early userspace behavior.
-
-### Why Separate Branches
-
-The initramfs and ext4-rootfs implementations target different development goals.
-
-Keeping them isolated allows experimentation with early bring-up workflows while maintaining a clean path toward a production-style root filesystem architecture.
+* Linux Boot Flow
+* Initramfs Internals
+* BusyBox Integration
+* Device Tree Loading
+* UART Routing
+* Linux Permissions
+* Ownership Handling inside CPIO Images
+* SSH Authentication Flow
+* Public / Private Key Cryptography
+* DHCP Client Operation
+* Embedded Linux Networking
+* Filesystem Mounting
+* Pseudo Filesystems
 
 ---
 
-## Current Status
+# Platform Roadmap
 
-| Item            | Status          |
-| --------------- | --------------- |
-| Active Release  | v0.0            |
-| Active Branch   | initramfs       |
-| Platform Status | Bootable        |
-| Next Milestone  | v0.1 Networking |
+## v0.0 — Linux Bring-Up Foundation
 
-Current boot sequence:
+**Status:** Complete
 
-```text
-Power On
-   ▼
-Firmware
-   ▼
-Linux Kernel
-   ▼
-Initramfs
-   ▼
-Custom /init
-   ▼
-BusyBox Shell
-```
-
----
-
-## Platform Roadmap
-
-### v0.0 — BusyBox + Initramfs
-
-Status: Complete
-
-Features:
+### Features
 
 * ARM64 Linux kernel boot
 * BusyBox userspace
 * Custom root filesystem
 * Custom `/init`
 * Initramfs (`rootfs.cpio.gz`)
-* Device Tree integration
 * UART console bring-up
+* Device Tree integration
 * Interactive shell access
 
+### Skills Demonstrated
+
+* Linux boot flow
+* Initramfs architecture
+* BusyBox integration
+* Root filesystem construction
+* ARM64 bring-up
+
 ---
 
-### v0.1 — Networking
+## v0.1 — Networking and Remote Access
 
-Objectives:
+**Status:** Complete
+
+### Features
 
 * Ethernet bring-up
-* DHCP client integration
-* Network diagnostics
-* IP connectivity validation
+* DHCP client integration (`udhcpc`)
+* Static IP fallback
+* Dropbear SSH server
+* Public-key authentication
+* Headless remote access
 
-Deliverable:
+### Skills Demonstrated
 
-```text
-Linux Boot
-   ▼
-Network Initialization
-   ▼
-DHCP
-   ▼
-IP Connectivity
-```
+* Linux networking
+* DHCP debugging
+* SSH authentication
+* Embedded Linux security
+* System integration
 
 ---
 
-### v0.2 — Dropbear
+## v0.2 — Device Tree Deep Dive
 
-Objectives:
+### Objectives
 
-* Dropbear SSH integration
-* Remote shell access
-* Headless system management
+* Analyze Raspberry Pi 5 Device Tree hierarchy
+* Enable/disable peripherals
+* UART routing investigation
+* Overlay development
+* Custom DTS modifications
 
-Deliverable:
+### Deliverable
 
 ```text
-Linux Boot
+Hardware
    ▼
-Network Online
+Device Tree
    ▼
-Dropbear
+Kernel
    ▼
-SSH Login
+Userspace
 ```
+
+### Skills Demonstrated
+
+* DTS
+* DTB
+* Overlay mechanism
+* Hardware description
+* BSP configuration
 
 ---
 
-### v0.3 — ext4 RootFS
+## v0.3 — U-Boot Integration
 
-Objectives:
+### Objectives
 
-* Separate boot and root partitions
+* Build U-Boot from source
+* Boot Linux through U-Boot
+* Configure boot arguments
+* Environment variable management
+* Boot script development
+
+### Deliverable
+
+```text
+Firmware
+   ▼
+U-Boot
+   ▼
+Linux Kernel
+   ▼
+Initramfs
+```
+
+### Skills Demonstrated
+
+* Bootloader architecture
+* Linux handoff
+* Embedded boot flow
+* BSP bring-up
+
+---
+
+## v0.4 — Persistent ext4 Root Filesystem
+
+### Objectives
+
+* Separate boot partition
+* Separate root partition
 * ext4 root filesystem
 * Persistent configuration
 * Persistent user data
 
-Deliverable:
+### Deliverable
 
 ```text
 Boot Partition
@@ -250,90 +226,130 @@ Mount ext4 RootFS
 Persistent Linux System
 ```
 
----
+### Skills Demonstrated
 
-### v1.0 — Stable Platform
-
-Objectives:
-
-* Stable software architecture
-* Automated image generation
-* Reproducible builds
-* Release workflow
-* Platform documentation
-
-Deliverable:
-
-Stable Embedded Linux platform suitable for continued BSP development.
+* Linux storage
+* Filesystems
+* Partitioning
+* RootFS management
 
 ---
 
-### v2.0 — Buildroot Integration
+## v0.5 — Linux Driver Development
 
-Objectives:
+### Objectives
 
-* Buildroot-based image generation
-* Automated root filesystem creation
+* Character driver
+* Sysfs interface
+* GPIO control
+* Device Tree integration
+* Kernel module development
+
+### Deliverable
+
+```text
+Device Tree
+   ▼
+Kernel Driver
+   ▼
+Userspace Application
+```
+
+### Skills Demonstrated
+
+* Linux kernel development
+* Driver architecture
+* Kernel APIs
+* Hardware abstraction
+
+---
+
+## v1.0 — Buildroot Migration
+
+### Objectives
+
+* Buildroot image generation
+* Cross-compilation workflow
 * Package integration
-* Build reproducibility
+* Custom package development
+* Reproducible builds
 
-Deliverable:
+### Deliverable
 
-Buildroot-managed Embedded Linux distribution for Raspberry Pi 5.
+Buildroot-managed Embedded Linux distribution.
 
----
+### Skills Demonstrated
 
-### v3.0 — Yocto Integration
-
-Objectives:
-
-* Yocto-based BSP workflow
-* Custom layers and recipes
-* Production-oriented Linux distribution generation
-* Advanced platform customization
-
-Deliverable:
-
-Production-grade Embedded Linux platform built using Yocto Project.
+* Embedded build systems
+* Toolchains
+* Distribution generation
 
 ---
 
-## Technologies
+## v2.0 — Yocto BSP Development
 
-* Embedded Linux
-* Linux Kernel
-* BusyBox
-* Initramfs
-* Device Tree
-* ARM64 (AArch64)
-* UART Debugging
-* Cross Compilation
-* Raspberry Pi 5
-* BSP Development
+### Objectives
+
+* Custom Yocto layers
+* BitBake recipes
+* Custom images
+* BSP customization
+* Production workflows
+
+### Deliverable
+
+Production-oriented Embedded Linux BSP.
+
+### Skills Demonstrated
+
+* Yocto Project
+* BSP engineering
+* Layer architecture
+* Industrial Linux workflows
 
 ---
 
-## Repository Layout
+## v3.0 — Advanced Platform Engineering
 
-Release-specific artifacts, SD card layouts, boot instructions, and deployment notes are documented alongside their corresponding releases.
+### Objectives
 
-This repository serves as the primary source tree and development history for the platform.
+* OTA update framework
+* Secure boot investigation
+* System profiling
+* Performance optimization
+* Upstream contribution workflow
+
+### Skills Demonstrated
+
+* Production deployment
+* Security
+* Maintainability
+* Open-source contribution
 
 ---
 
-## Maintainer
+# Maintainer
 
 **Vasu Kesharwani**
 
 Focus Areas:
 
-- Embedded Linux
-- BSP Development
-- Platform Bring-Up
-- ARM64 Systems
-- Linux Boot Architecture
+* Embedded Linux
+* BSP Development
+* ARM64 Platforms
+* Linux Boot Architecture
+* System Bring-Up
+* Embedded Networking
 
-LinkedIn: https://www.linkedin.com/in/vasudev-kesharwani-466503201/
+GitHub:
+https://github.com/Vasu-Eng
 
-GitHub: https://github.com/Vasu-Eng
+LinkedIn:
+https://www.linkedin.com/in/vasudev-kesharwani-466503201/
+
+---
+
+# License
+
+This repository is intended for learning, experimentation, BSP development practice, and Embedded Linux engineering research.
 
