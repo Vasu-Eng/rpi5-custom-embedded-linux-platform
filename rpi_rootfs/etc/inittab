@@ -1,0 +1,12 @@
+::sysinit:/etc/init.d/rcS
+
+#user defined banner 
+::once:/usr/bin/banner
+
+console::askfirst:/bin/cttyhack /bin/login
+
+
+#do this before poweroff
+::ctrlaltdel:/sbin/poweroff
+::shutdown:/bin/umount -a -r
+::shutdown:/sbin/swapoff -a
