@@ -1,17 +1,32 @@
 #!/bin/sh
 
-mount -t devtmpfs devtmpfs /dev
-mount -t proc proc /proc
-mount -t sysfs sysfs /sys
 
-BOOT_TIME=$(cut -d' ' -f1 /proc/uptime)
+# mount  vertual using fstab 
+# mount -a
 
+# explicitly creating /dev/pts as it is failing  with fstab
+mkdir -p /dev
+mount -t devtmpfs devtmpfs /dev || echo "/dev mount failed"
+
+mkdir -p /proc
+mount -t proc proc /proc    || echo "/proc mount failed" 
+mkdir -p /sys
+mount -t sysfs sysfs /sys    || echo "/sys mount failed" 
+mkdir -p /tmp
+mount -t tmpfs tmpfs /tmp    || echo "/tmp mount failed" 
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts || echo "/dev/pts mount failed"
+mkdir -p /run
+mount -t tmpfs tmpfs /run  || echo "/run mount  failed"
+
+
+
+echo "[INFO] Mounted filesystems:"
+mount
 echo
-echo "================================"
-echo " Raspberry Pi 5 Custom Linux"
-echo " Release : v0.0.1"
-echo " Boot Time: ${BOOT_TIME}s"
-echo "================================"
-echo
 
-exec /bin/sh
+# Allow kernel messages to finish printing 
+#sleep 2
+
+echo "[INFO] Switching to BusyBox init..."
+exec /sbin/init
