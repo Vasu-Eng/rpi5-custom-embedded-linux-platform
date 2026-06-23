@@ -14,6 +14,14 @@ then
 
 fi
 
+echo "=== Dropbear Host Key ==="
+
+ls -l /etc/dropbear/dropbear_rsa_host_key
+
+md5sum /etc/dropbear/dropbear_rsa_host_key
+
+dropbearkey -y -f /etc/dropbear/dropbear_rsa_host_key
+
 echo "Starting Dropbear SSH..."
 mkdir -p /var/run
 dropbear  -E
