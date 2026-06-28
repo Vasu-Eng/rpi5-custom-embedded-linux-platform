@@ -1,0 +1,83 @@
+/dts-v1/;
+
+/ {
+	compatible = "brcm,bcm2712";
+
+	fragment@0 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			brcm,gpio-bank-widths = <0x20 0x04>;
+		};
+	};
+
+	fragment@1 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			brcm,gpio-bank-widths = <0x0f 0x06>;
+		};
+	};
+
+	fragment@2 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			compatible = "brcm,bcm2712d0-pinctrl";
+			reg = <0x7d504100 0x20>;
+		};
+	};
+
+	fragment@3 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			compatible = "brcm,bcm2712d0-aon-pinctrl";
+			reg = <0x7d510700 0x1c>;
+		};
+	};
+
+	fragment@4 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			interrupts = <0x00 0x78 0x04>;
+		};
+	};
+
+	fragment@5 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			dmas = <0xffffffff 0x03 0xffffffff 0x04>;
+		};
+	};
+
+	fragment@6 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			dmas = <0xffffffff 0x41fa000c>;
+		};
+	};
+
+	fragment@7 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			dmas = <0xffffffff 0x41fa000d>;
+		};
+	};
+
+	__fixups__ {
+		gio = "/fragment@0:target:0";
+		gio_aon = "/fragment@1:target:0";
+		pinctrl = "/fragment@2:target:0";
+		pinctrl_aon = "/fragment@3:target:0";
+		uart10 = "/fragment@4:target:0";
+		spi10 = "/fragment@5:target:0";
+		dma40 = "/fragment@5/__overlay__:dmas:0\0/fragment@5/__overlay__:dmas:8\0/fragment@6/__overlay__:dmas:0\0/fragment@7/__overlay__:dmas:0";
+		hdmi0 = "/fragment@6:target:0";
+		hdmi1 = "/fragment@7:target:0";
+	};
+};
