@@ -1,0 +1,2 @@
+hifiberry-studio-dac8x-overlay.o: \
+ arch/arm64/boot/dts/overlays/hifiberry-studio-dac8x-overlay.dts

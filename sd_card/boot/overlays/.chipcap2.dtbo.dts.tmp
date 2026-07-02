@@ -1,0 +1,58 @@
+# 0 "arch/arm64/boot/dts/overlays/chipcap2-overlay.dts"
+# 0 "<built-in>"
+# 0 "<command-line>"
+# 1 "arch/arm64/boot/dts/overlays/chipcap2-overlay.dts"
+/dts-v1/;
+/plugin/;
+
+
+# 1 "./scripts/dtc/include-prefixes/dt-bindings/gpio/gpio.h" 1
+# 6 "arch/arm64/boot/dts/overlays/chipcap2-overlay.dts" 2
+# 1 "./scripts/dtc/include-prefixes/dt-bindings/interrupt-controller/irq.h" 1
+# 7 "arch/arm64/boot/dts/overlays/chipcap2-overlay.dts" 2
+
+/ {
+ compatible = "brcm,bcm2835";
+
+ fragment@0 {
+  target = <&i2c1>;
+  __overlay__ {
+   #address-cells = <1>;
+   #size-cells = <0>;
+   status = "okay";
+
+   chipcap2: chipcap2@28 {
+    compatible = "amphenol,cc2d23s";
+    reg = <0x28>;
+    interrupt-parent = <&gpio>;
+    interrupts = <4 1>,
+          <5 1>,
+          <6 1>;
+    interrupt-names = "ready", "low", "high";
+    vdd-supply = <&chipcap2_reg>;
+    status = "okay";
+   };
+  };
+ };
+
+ fragment@1 {
+  target-path = "/";
+  __overlay__ {
+   chipcap2_reg: chipcap2_reg {
+    compatible = "regulator-fixed";
+    regulator-name = "chipcap2_reg";
+    regulator-min-microvolt = <3300000>;
+    regulator-max-microvolt = <3300000>;
+    gpio = <&gpio 26 0>;
+    enable-active-high;
+   };
+  };
+ };
+
+ __overrides__ {
+  ready_pin = <&chipcap2>, "interrupts:0";
+  low_pin = <&chipcap2>, "interrupts:8";
+  high_pin = <&chipcap2>, "interrupts:16";
+  reg_pin = <&chipcap2_reg>, "gpio:4";
+ };
+};

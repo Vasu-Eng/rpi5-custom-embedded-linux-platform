@@ -1,0 +1,3 @@
+chipcap2-overlay.o: arch/arm64/boot/dts/overlays/chipcap2-overlay.dts \
+ scripts/dtc/include-prefixes/dt-bindings/gpio/gpio.h \
+ scripts/dtc/include-prefixes/dt-bindings/interrupt-controller/irq.h

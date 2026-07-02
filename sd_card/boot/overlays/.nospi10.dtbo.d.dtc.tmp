@@ -1,0 +1,1 @@
+arch/arm64/boot/dts/overlays/nospi10.dtbo: arch/arm64/boot/dts/overlays/.nospi10.dtbo.dts.tmp

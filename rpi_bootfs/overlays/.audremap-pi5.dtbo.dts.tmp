@@ -1,0 +1,62 @@
+# 0 "arch/arm64/boot/dts/overlays/audremap-pi5-overlay.dts"
+# 0 "<built-in>"
+# 0 "<command-line>"
+# 1 "arch/arm64/boot/dts/overlays/audremap-pi5-overlay.dts"
+/dts-v1/;
+/plugin/;
+# 11 "arch/arm64/boot/dts/overlays/audremap-pi5-overlay.dts"
+/ {
+ compatible = "brcm,bcm2712";
+
+ fragment@0 {
+  target = <&rp1_audio_out>;
+  frag0: __overlay__ {
+   pinctrl-0 = <&rp1_audio_out_12_13>;
+   pinctrl-names = "default";
+   status = "ok";
+  };
+ };
+
+ fragment@1 {
+   target-path = "/";
+   __overlay__ {
+
+    rp1_audio_out_codec: rp1_audio_out_codec@0 {
+        compatible = "linux,spdif-dit";
+        #sound-dai-cells = <0>;
+        status = "ok";
+    };
+
+    rp1_audio_out_simple_card@0 {
+        compatible = "simple-audio-card";
+        simple-audio-card,name = "RP1-Audio-Out";
+        #address-cells = <1>;
+        #size-cells = <0>;
+        status = "ok";
+
+        simple-audio-card,dai-link@0 {
+     reg = <0>;
+     format = "left_j";
+     bitclock-master = <&sndcpu0>;
+     frame-master = <&sndcpu0>;
+
+    sndcpu0: cpu {
+     sound-dai = <&rp1_audio_out>;
+    };
+
+    codec {
+        sound-dai = <&rp1_audio_out_codec>;
+    };
+       };
+   };
+  };
+ };
+
+ __overrides__ {
+  swap_lr = <&frag0>, "swap_lr?";
+  pins_12_13 = <0>, "+0+1";
+  pins_18_19 = <0>, "-0-1";
+  pins_40_41 = <0>, "-0-1";
+  pins_40_45 = <0>, "-0-1";
+ };
+};

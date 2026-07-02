@@ -6,7 +6,8 @@ uart_2ndstage=1
 
 [pi5]
 arm_64bit=1
-kernel=kernel_2712.img
+#kernel=kernel_2712.img
+kernel=rpi5_custom_minimal_kernel.img.gz
 device_tree=bcm2712-rpi-5-b.dtb
 initramfs rootfs.cpio.gz followkernel
 

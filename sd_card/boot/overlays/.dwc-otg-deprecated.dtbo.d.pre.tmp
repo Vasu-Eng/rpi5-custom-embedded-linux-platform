@@ -1,0 +1,2 @@
+dwc-otg-deprecated-overlay.o: \
+ arch/arm64/boot/dts/overlays/dwc-otg-deprecated-overlay.dts

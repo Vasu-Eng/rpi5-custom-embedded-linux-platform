@@ -1,0 +1,1 @@
+arch/arm64/boot/dts/overlays/sc16is75x-spi.dtbo: arch/arm64/boot/dts/overlays/.sc16is75x-spi.dtbo.dts.tmp

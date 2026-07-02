@@ -1,0 +1,2 @@
+audremap-pi5-overlay.o: \
+ arch/arm64/boot/dts/overlays/audremap-pi5-overlay.dts

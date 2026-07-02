@@ -1,0 +1,1 @@
+arch/arm64/boot/dts/overlays/rpi-power-hat-b.dtbo: arch/arm64/boot/dts/overlays/.rpi-power-hat-b.dtbo.dts.tmp
