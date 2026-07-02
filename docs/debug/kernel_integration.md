@@ -208,3 +208,40 @@ During this milestone the following Linux BSP concepts were explored:
 - SPI subsystem initialization
 - Linux Device Tree investigation
 - RP1 peripheral architecture on Raspberry Pi 5
+
+
+
+## Device Tree Bring-up: RP1 SPI0
+
+### Objective
+
+Enable the Raspberry Pi 5 SPI0 controller on the 40-pin GPIO header without relying on `dtparam=spi=on`.
+
+### Modification
+
+Added the following board-specific override to:
+
+```
+arch/arm64/boot/dts/broadcom/bcm2712-rpi-5-b.dts
+```
+
+```dts
+&spi0 {
+    status = "okay";
+};
+```
+
+### Result
+
+The custom DTB successfully enabled the RP1 SPI0 controller.
+
+Verification:
+
+```
+/sys/class/spi_master/
+
+spi0
+spi10
+```
+
+This confirms that the board-specific Device Tree override correctly replaces the default `status = "disabled"` defined in `rp1.dtsi`.
