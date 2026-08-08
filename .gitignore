@@ -6,10 +6,10 @@
 # Bootlin SDK (keep only helper files)
 ###############################################################################
 
-sdk/*
-!sdk/environment-setup
-!sdk/README.md
-!sdk/.gitkeep
+sdk/custom-sdk/*
+sdk/official-sdk/*
+!sdk/custom-sdk/README.md
+!sdk/offical-sdk/README.md
 
 ###############################################################################
 # Package Build Artifacts
