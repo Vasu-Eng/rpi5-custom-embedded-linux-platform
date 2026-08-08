@@ -1,2 +1,0 @@
-ezsound-6x8iso-overlay.o: \
- arch/arm64/boot/dts/overlays/ezsound-6x8iso-overlay.dts

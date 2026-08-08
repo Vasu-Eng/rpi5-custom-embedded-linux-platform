@@ -1,1 +1,0 @@
-gc9a01-overlay.o: arch/arm64/boot/dts/overlays/gc9a01-overlay.dts

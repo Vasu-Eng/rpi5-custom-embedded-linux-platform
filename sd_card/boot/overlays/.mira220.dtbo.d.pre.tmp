@@ -1,3 +1,0 @@
-mira220-overlay.o: arch/arm64/boot/dts/overlays/mira220-overlay.dts \
- scripts/dtc/include-prefixes/dt-bindings/gpio/gpio.h \
- arch/arm64/boot/dts/overlays/mira220.dtsi

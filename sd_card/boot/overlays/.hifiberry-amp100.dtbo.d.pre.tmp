@@ -1,2 +1,0 @@
-hifiberry-amp100-overlay.o: \
- arch/arm64/boot/dts/overlays/hifiberry-amp100-overlay.dts

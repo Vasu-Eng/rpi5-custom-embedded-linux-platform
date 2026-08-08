@@ -1,2 +1,0 @@
-wm8960-soundcard-overlay.o: \
- arch/arm64/boot/dts/overlays/wm8960-soundcard-overlay.dts

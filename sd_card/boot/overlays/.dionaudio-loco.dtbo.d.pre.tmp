@@ -1,2 +1,0 @@
-dionaudio-loco-overlay.o: \
- arch/arm64/boot/dts/overlays/dionaudio-loco-overlay.dts

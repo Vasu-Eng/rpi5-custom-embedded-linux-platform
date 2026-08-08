@@ -1,2 +1,0 @@
-pcie-32bit-dma-pi5-overlay.o: \
- arch/arm64/boot/dts/overlays/pcie-32bit-dma-pi5-overlay.dts

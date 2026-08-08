@@ -1,1 +1,0 @@
-ltc294x-overlay.o: arch/arm64/boot/dts/overlays/ltc294x-overlay.dts

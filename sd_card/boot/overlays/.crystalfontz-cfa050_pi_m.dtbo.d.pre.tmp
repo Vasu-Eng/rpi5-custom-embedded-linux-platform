@@ -1,2 +1,0 @@
-crystalfontz-cfa050_pi_m-overlay.o: \
- arch/arm64/boot/dts/overlays/crystalfontz-cfa050_pi_m-overlay.dts

@@ -1,2 +1,0 @@
-pwm-gpio-fan-overlay.o: \
- arch/arm64/boot/dts/overlays/pwm-gpio-fan-overlay.dts

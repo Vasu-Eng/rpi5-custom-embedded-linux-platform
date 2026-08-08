@@ -1,3 +1,0 @@
-arducam-64mp-overlay.o: \
- arch/arm64/boot/dts/overlays/arducam-64mp-overlay.dts \
- arch/arm64/boot/dts/overlays/arducam-64mp.dtsi

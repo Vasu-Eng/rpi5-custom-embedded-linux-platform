@@ -1,2 +1,0 @@
-hifiberry-digi-pro-overlay.o: \
- arch/arm64/boot/dts/overlays/hifiberry-digi-pro-overlay.dts

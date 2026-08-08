@@ -1,1 +1,0 @@
-pibell-overlay.o: arch/arm64/boot/dts/overlays/pibell-overlay.dts

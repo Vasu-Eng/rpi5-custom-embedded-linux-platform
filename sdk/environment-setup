@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+#set -x
+
+export PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+export ROOTFS="${PROJECT_ROOT}/rootfs"
+
+export BOOTFS="${PROJECT_ROOT}/bootfs"
+
+export PACKAGES="${PROJECT_ROOT}/packages"
+
+export KERNEL="${PROJECT_ROOT}/kernel"
+
+export SDK_ROOT="${PROJECT_ROOT}/sdk/aarch64--glibc--stable-2025.08-1"
+
+###############################################################################
+# PATH
+###############################################################################
+
+export PATH="${SDK_ROOT}/bin:${PATH}"
+
+###############################################################################
+# Toolchain
+###############################################################################
+
+export CROSS_COMPILE="aarch64-buildroot-linux-gnu-"
+
+export CC="${CROSS_COMPILE}gcc"
+export CXX="${CROSS_COMPILE}g++"
+export AR="${CROSS_COMPILE}ar"
+export AS="${CROSS_COMPILE}as"
+export LD="${CROSS_COMPILE}ld"
+export STRIP="${CROSS_COMPILE}strip"
+export RANLIB="${CROSS_COMPILE}ranlib"
+
+###############################################################################
+# Sysroot
+###############################################################################
+
+export SYSROOT="$($CC -print-sysroot)"

@@ -1,3 +1,0 @@
-upstream-pi4-overlay.o: \
- arch/arm64/boot/dts/overlays/upstream-pi4-overlay.dts \
- scripts/dtc/include-prefixes/dt-bindings/clock/bcm2835.h

@@ -1,3 +1,0 @@
-vd56g3-overlay.o: arch/arm64/boot/dts/overlays/vd56g3-overlay.dts \
- scripts/dtc/include-prefixes/dt-bindings/gpio/gpio.h \
- arch/arm64/boot/dts/overlays/vd56g3_vd66gy-overlay.dtsi

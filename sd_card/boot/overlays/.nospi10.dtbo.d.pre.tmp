@@ -1,1 +1,0 @@
-nospi10-overlay.o: arch/arm64/boot/dts/overlays/nospi10-overlay.dts

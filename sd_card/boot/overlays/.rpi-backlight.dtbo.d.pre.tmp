@@ -1,2 +1,0 @@
-rpi-backlight-overlay.o: \
- arch/arm64/boot/dts/overlays/rpi-backlight-overlay.dts

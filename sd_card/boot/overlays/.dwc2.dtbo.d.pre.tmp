@@ -1,1 +1,0 @@
-dwc2-overlay.o: arch/arm64/boot/dts/overlays/dwc2-overlay.dts

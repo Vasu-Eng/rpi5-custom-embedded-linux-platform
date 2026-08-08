@@ -1,3 +1,0 @@
-i2c-rtc-overlay.o: arch/arm64/boot/dts/overlays/i2c-rtc-overlay.dts \
- arch/arm64/boot/dts/overlays/i2c-rtc-common.dtsi \
- arch/arm64/boot/dts/overlays/i2c-buses.dtsi

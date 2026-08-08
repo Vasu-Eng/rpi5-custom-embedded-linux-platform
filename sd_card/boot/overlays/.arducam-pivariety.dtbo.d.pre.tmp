@@ -1,2 +1,0 @@
-arducam-pivariety-overlay.o: \
- arch/arm64/boot/dts/overlays/arducam-pivariety-overlay.dts

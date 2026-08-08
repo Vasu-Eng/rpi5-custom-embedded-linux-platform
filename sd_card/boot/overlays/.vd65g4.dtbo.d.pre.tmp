@@ -1,3 +1,0 @@
-vd65g4-overlay.o: arch/arm64/boot/dts/overlays/vd65g4-overlay.dts \
- scripts/dtc/include-prefixes/dt-bindings/gpio/gpio.h \
- arch/arm64/boot/dts/overlays/vd55g1_vd65g4-overlay.dtsi

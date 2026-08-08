@@ -1,3 +1,0 @@
-imx378-overlay.o: arch/arm64/boot/dts/overlays/imx378-overlay.dts \
- arch/arm64/boot/dts/overlays/imx477_378-overlay.dtsi \
- arch/arm64/boot/dts/overlays/imx477_378.dtsi

@@ -1,2 +1,0 @@
-ugreen-dabboard-overlay.o: \
- arch/arm64/boot/dts/overlays/ugreen-dabboard-overlay.dts

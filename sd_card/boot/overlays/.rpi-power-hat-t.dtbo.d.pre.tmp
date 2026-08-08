@@ -1,2 +1,0 @@
-rpi-power-hat-t-overlay.o: \
- arch/arm64/boot/dts/overlays/rpi-power-hat-t-overlay.dts

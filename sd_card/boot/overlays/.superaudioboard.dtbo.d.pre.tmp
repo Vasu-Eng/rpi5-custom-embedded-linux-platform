@@ -1,2 +1,0 @@
-superaudioboard-overlay.o: \
- arch/arm64/boot/dts/overlays/superaudioboard-overlay.dts

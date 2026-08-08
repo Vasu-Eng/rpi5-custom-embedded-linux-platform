@@ -1,2 +1,0 @@
-pitft28-capacitive-overlay.o: \
- arch/arm64/boot/dts/overlays/pitft28-capacitive-overlay.dts

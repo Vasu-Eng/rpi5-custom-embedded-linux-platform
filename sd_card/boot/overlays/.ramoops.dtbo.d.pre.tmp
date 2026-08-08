@@ -1,1 +1,0 @@
-ramoops-overlay.o: arch/arm64/boot/dts/overlays/ramoops-overlay.dts

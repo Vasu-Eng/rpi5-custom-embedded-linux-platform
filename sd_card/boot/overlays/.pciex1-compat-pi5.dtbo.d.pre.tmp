@@ -1,2 +1,0 @@
-pciex1-compat-pi5-overlay.o: \
- arch/arm64/boot/dts/overlays/pciex1-compat-pi5-overlay.dts
