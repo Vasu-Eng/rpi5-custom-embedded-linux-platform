@@ -1,10 +1,41 @@
-# Toolchain
+# SDK / Toolchain
 
 ## Purpose
 
-This directory is reserved for the ARM64 cross-compilation toolchain used by this project.
+This directory contains the ARM64 cross-compilation SDKs used by the project.
 
-The toolchain is **not** committed to Git because it is several hundred megabytes in size. Instead, this repository documents the required toolchain version and build environment.
+The actual SDK binaries are **not committed to Git** because they are large generated artifacts. The repository only stores the SDK directory structure, documentation, and reproducibility information.
+
+---
+
+## Why Two SDKs?
+
+This project intentionally maintains **two SDKs with different purposes**:
+
+1. **Official SDK** — the original Bootlin SDK used as the reference toolchain.
+2. **Custom SDK** — an SDK regenerated from Buildroot with the common development libraries required by the project's BSP package framework.
+
+The two SDKs are kept separate to avoid mixing toolchain, libc, headers, and libraries from different environments.
+
+```text
+                         Buildroot
+                            │
+              ┌─────────────┴─────────────┐
+              │                           │
+                    ▼                                         ▼
+      Official Bootlin SDK         Custom Buildroot SDK
+              │                           │
+              │                           │
+        Reference SDK              Project SDK
+              │                           │
+              └─────────────┬─────────────┘
+                            │
+                                          ▼
+                  BSP Package Framework
+                            │
+             ┌──────────────┼──────────────┐
+                   ▼                    ▼                    ▼
+          BusyBox        Dropbear        rt-tests
 
 ---
 
@@ -56,70 +87,9 @@ The compiler, linker and target sysroot must be ABI compatible.
 
 ---
 
-## Current Status
-
-Current project components:
-
-- Custom ARM64 sysroot
-- Cross-compilation environment
-- pkg-config configuration
-- Build automation scripts
-
-Pending:
-
-- Replace the Ubuntu 22.04 cross toolchain with a Debian 13 (Trixie) compatible ARM64 SDK.
-
----
-
-## Future Plan
-
-A modern ARM64 SDK will be used for all userspace cross-compilation.
-
-The SDK should provide:
-
-- GCC
-- G++
-- Binutils
-- glibc
-- ARM64 sysroot
-- pkg-config support
-- GDB
-
-Using a dedicated SDK ensures that:
-
-- compiler
-- linker
-- libc
-- headers
-- sysroot
-
-all target the same ABI.
-
----
-
-## Repository Structure
-
-```
-toolchain/
-├── README.md
-└── .gitkeep
-```
-
-The actual SDK is intentionally excluded from version control.
-
-After downloading and extracting the SDK, update:
-
-```
-scripts/environment.sh
-```
-
-to point to the installed toolchain.
-
----
-
 ## References
 
-Toolchain used : aarch64--glibc--stable-2025.08-1.tar.xz
+Toolchain used ( offical-sdk) : aarch64--glibc--stable-2025.08-1.tar.xz
 ```
 Dowload link : https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/
 ```

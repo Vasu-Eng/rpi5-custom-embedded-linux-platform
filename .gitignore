@@ -9,7 +9,7 @@
 sdk/custom-sdk/*
 sdk/official-sdk/*
 !sdk/custom-sdk/README.md
-!sdk/offical-sdk/README.md
+!sdk/official-sdk/README.md
 
 ###############################################################################
 # Package Build Artifacts
