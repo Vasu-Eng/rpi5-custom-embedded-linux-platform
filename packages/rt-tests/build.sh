@@ -95,10 +95,15 @@ if [ "$ACTION" = "clean" ]; then
 
     rm -rf "$BUILD_DIR"
     rm -rf "$INSTALL_DIR"
-
+    
     echo "[OK] Build and install directories removed."
-    echo
-
+        
+    cd "$SCRIPT_DIR/source"
+    make clean
+    rm -rf bld
+    mkdir -p bld
+    echo "[OK] run make clean inside source."
+    echo 
     exit 0
 fi
 
@@ -119,6 +124,19 @@ if [ "$ACTION" != "build" ]; then
 
     exit 1
 fi
+
+# ============================================================
+# Check for latest sdk 
+# ============================================================
+
+if [ "$SDK_TYPE" = "custom-sdk" ]; then
+       
+  source   "$PROJECT_ROOT/scripts/prepare-sdk.sh"     
+  prepare_sdk
+  
+fi
+
+
 
 
 # ============================================================
@@ -209,8 +227,9 @@ echo
 
 cd "$SOURCE_DIR"
 
-make \
+make -B \
     CROSS_COMPILE="${CROSS_COMPILE}" \
+      NUMA=0 \
     -j"$(nproc)"
 
 
@@ -228,12 +247,13 @@ rm -rf "$INSTALL_DIR"
 
 mkdir -p "$INSTALL_DIR"
 
-make \
+
+make -B \
     CROSS_COMPILE="${CROSS_COMPILE}" \
     DESTDIR="${INSTALL_DIR}" \
     prefix=/usr \
+    PYLIB=/usr/lib/python3.13/site-packages \
     install
-
 
 # ============================================================
 # Build Complete

@@ -129,7 +129,7 @@ $(OBJDIR)/%.d: %.c | $(OBJDIR)
 all: $(TARGETS) hwlatdetect get_cyclictest_snapshot | $(OBJDIR)
 
 $(OBJDIR):
-	mkdir $(OBJDIR)
+	mkdir -p $(OBJDIR)
 
 # Include dependency files, automatically generate them if needed.
 -include $(addprefix $(OBJDIR)/,$(sources:.c=.d))
@@ -151,11 +151,11 @@ pi_stress: $(OBJDIR)/pi_stress.o $(OBJDIR)/librttest.a
 
 hwlatdetect:  src/hwlatdetect/hwlatdetect.py
 	chmod +x src/hwlatdetect/hwlatdetect.py
-	ln -s src/hwlatdetect/hwlatdetect.py hwlatdetect
+	ln -sf src/hwlatdetect/hwlatdetect.py hwlatdetect
 
 get_cyclictest_snapshot: src/cyclictest/get_cyclictest_snapshot.py
 	chmod +x src/cyclictest/get_cyclictest_snapshot.py
-	ln -s src/cyclictest/get_cyclictest_snapshot.py get_cyclictest_snapshot
+	ln -sf src/cyclictest/get_cyclictest_snapshot.py get_cyclictest_snapshot
 
 rt-migrate-test: $(OBJDIR)/rt-migrate-test.o $(OBJDIR)/librttest.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBS) $(RTTESTLIB)
