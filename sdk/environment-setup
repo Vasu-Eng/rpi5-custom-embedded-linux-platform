@@ -1,28 +1,110 @@
 #!/usr/bin/env bash
 
-#set -x
+# ============================================================
+# Project Environment Setup
+#
+# Usage:
+#
+#   source sdk/environment-setup custom-sdk
+#
+#   source sdk/environment-setup official-sdk
+#
+# ============================================================
+
+# ------------------------------------------------------------
+# SDK selection
+# ------------------------------------------------------------
+
+SDK_TYPE="${1:-}"
+
+if [[ -z "$SDK_TYPE" ]]; then
+    echo "[ERROR] SDK not specified."
+    echo
+    echo "Usage:"
+    echo "  source sdk/environment-setup custom-sdk"
+    echo "  source sdk/environment-setup official-sdk"
+    echo
+    return 1 2>/dev/null || exit 1
+fi
+
+
+# ------------------------------------------------------------
+# Project root
+# ------------------------------------------------------------
 
 export PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+
+# ------------------------------------------------------------
+# Project directories
+# ------------------------------------------------------------
+
 export ROOTFS="${PROJECT_ROOT}/rootfs"
-
 export BOOTFS="${PROJECT_ROOT}/bootfs"
-
 export PACKAGES="${PROJECT_ROOT}/packages"
-
 export KERNEL="${PROJECT_ROOT}/kernel"
 
-export SDK_ROOT="${PROJECT_ROOT}/sdk/aarch64--glibc--stable-2025.08-1"
 
-###############################################################################
+# ------------------------------------------------------------
+# Select SDK
+# ------------------------------------------------------------
+
+case "$SDK_TYPE" in
+
+    custom-sdk)
+
+        export SDK_ROOT="${PROJECT_ROOT}/sdk/custom-sdk/aarch64-sdk"
+
+        ;;
+
+    official-sdk)
+
+        export SDK_ROOT="${PROJECT_ROOT}/sdk/official-sdk/aarch64-sdk"
+
+        ;;
+
+    *)
+
+        echo "[ERROR] Invalid SDK:"
+        echo "        $SDK_TYPE"
+        echo
+        echo "Valid options:"
+        echo "  custom-sdk"
+        echo "  official-sdk"
+        echo
+
+        return 1 2>/dev/null || exit 1
+
+        ;;
+
+esac
+
+
+# ------------------------------------------------------------
+# Validate SDK
+# ------------------------------------------------------------
+
+if [[ ! -d "$SDK_ROOT" ]]; then
+
+    echo "[ERROR] SDK directory does not exist:"
+    echo "        $SDK_ROOT"
+    echo
+
+    return 1 2>/dev/null || exit 1
+
+fi
+
+
+# ------------------------------------------------------------
 # PATH
-###############################################################################
+# ------------------------------------------------------------
 
 export PATH="${SDK_ROOT}/bin:${PATH}"
 
-###############################################################################
+
+# ------------------------------------------------------------
 # Toolchain
-###############################################################################
+# ------------------------------------------------------------
 
 export CROSS_COMPILE="aarch64-buildroot-linux-gnu-"
 
@@ -34,8 +116,41 @@ export LD="${CROSS_COMPILE}ld"
 export STRIP="${CROSS_COMPILE}strip"
 export RANLIB="${CROSS_COMPILE}ranlib"
 
-###############################################################################
-# Sysroot
-###############################################################################
 
-export SYSROOT="$($CC -print-sysroot)"
+# ------------------------------------------------------------
+# Verify compiler
+# ------------------------------------------------------------
+
+if ! command -v "$CC" >/dev/null 2>&1; then
+
+    echo "[ERROR] Cross compiler not found:"
+    echo "        $CC"
+    echo
+
+    return 1 2>/dev/null || exit 1
+
+fi
+
+
+# ------------------------------------------------------------
+# Sysroot
+# ------------------------------------------------------------
+
+export SYSROOT="$("$CC" -print-sysroot)"
+
+
+# ------------------------------------------------------------
+# Display configuration
+# ------------------------------------------------------------
+
+echo
+echo "============================================================"
+echo " Embedded Linux SDK Environment"
+echo "============================================================"
+echo " SDK Type       : $SDK_TYPE"
+echo " SDK Root       : $SDK_ROOT"
+echo " Cross Compile  : $CROSS_COMPILE"
+echo " Compiler       : $CC"
+echo " Sysroot        : $SYSROOT"
+echo "============================================================"
+echo
