@@ -353,3 +353,118 @@ https://www.linkedin.com/in/vasudev-kesharwani-466503201/
 
 This repository is intended for learning, experimentation, BSP development practice, and Embedded Linux engineering research.
 
+
+
+                    CUSTOM EMBEDDED LINUX BSP
+                              │
+        ┌─────────────────────┴─────────────────────┐
+        │                                           │
+     Toolchain                                  Kernel
+        │                                           │
+        ▼                                           ▼
+      SDK                                      Image/DTB
+        │
+        ▼
+   Package builds
+        │
+   ┌────┼────────┬─────────┐
+   │    │        │         │
+BusyBox Dropbear rt-tests  ...
+   │    │        │
+   └────┴────────┴─────────┘
+              │
+              ▼
+        package/install/
+              │
+              ▼
+       Runtime dependencies
+              │
+              ▼
+          ROOTFS
+              │
+              ├── /bin
+              ├── /sbin
+              ├── /usr/bin
+              ├── /usr/lib
+              ├── /etc
+              └── /lib
+              │
+              ▼
+        Root filesystem image
+              │
+              ▼
+      Boot files + Kernel + DTB
+              │
+              ▼
+       Partitioned disk image
+              │
+              ▼
+      rpi5-custom-linux.img
+
+
+
+rpi_rootfs/
+├── bin/              ← package binaries
+├── sbin/             ← package binaries
+├── lib/              ← runtime libraries
+│
+├── usr/
+│   ├── bin/          ← package binaries
+│   ├── sbin/         ← package binaries
+│   ├── lib/          ← runtime libraries
+│   └── share/        ← package data/manpages
+│
+├── etc/              ← YOUR CONFIG → preserve
+├── root/             ← YOUR DATA → preserve
+├── var/              ← runtime/persistent data → preserve
+├── home/             ← preserve
+│
+├── dev/              ← mount/runtime
+├── proc/             ← mountpoint
+├── sys/              ← mountpoint
+└── tmp/              ← runtime
+
+
+
+                    rpi_rootfs
+                         │
+          ┌──────────────┴──────────────┐
+          │                             │
+    PACKAGE OWNERSHIP              RUNTIME OWNERSHIP
+          │                             │
+ /bin/* /sbin/*                    /lib/*
+ /usr/bin/*                        selected /usr/lib/*
+ /usr/sbin/*                      selected libraries
+ /usr/share/*
+          │                             │
+          ▼                             ▼
+ package manifest              runtime manifest
+
+
+scripts/
+├── rootfs-builder.sh
+├── resolve-runtime-deps.sh
+└── rootfs-ownership.sh        ← common ownership logic
+
+rpi_rootfs/
+└── .metadata/
+    ├── package-files.manifest
+    └── runtime-libs.manifest
+
+
+ELF
+ ↓
+resolve dependencies
+ ↓
+build CURRENT runtime manifest
+ ↓
+compare with PREVIOUS runtime manifest
+ ↓
+ ├── same SHA       → SKIP
+ ├── different SHA  → WARNING + ask overwrite
+ ├── new library    → COPY
+ └── old runtime-owned library
+          ↓
+       WARNING + ask removal
+
+
