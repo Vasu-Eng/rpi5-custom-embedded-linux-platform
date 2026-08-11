@@ -9,10 +9,12 @@ set -euo pipefail
 #   ./scripts/resolve-runtime-deps.sh \
 #       <PACKAGES_DIR> <SYSROOT> <ROOTFS_DIR>
 #
+#   ./scripts/resolve-runtime-deps.sh \
+#       <PACKAGES_DIR> <ROOTFS_DIR>
+#
 # Example:
 #   ./scripts/resolve-runtime-deps.sh \
 #       packages \
-#       "$SYSROOT" \
 #       rootfs
 #
 # The resolver:
@@ -26,15 +28,20 @@ set -euo pipefail
 #   8. Copies runtime files into the rootfs
 # ============================================================
 
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <PACKAGES_DIR> <SYSROOT> <ROOTFS_DIR>"
+
+source "$PROJECT_ROOT/sdk/environment-setup" custom-sdk
+
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <PACKAGES_DIR> <ROOTFS_DIR>"
     exit 1
 fi
 
+
 PACKAGES_DIR="$(cd "$1" && pwd)"
-SYSROOT="$(cd "$2" && pwd)"
-ROOTFS_DIR="$(mkdir -p "$3" && cd "$3" && pwd)"
+ROOTFS_DIR="$(mkdir -p "$2" && cd "$2" && pwd)"
+
 
 METADATA_DIR="$ROOTFS_DIR/.metadata"
 
@@ -125,10 +132,19 @@ find_library()
 sysroot_to_rootfs_path()
 {
     local PATH_IN_SYSROOT="$1"
+    local REL_PATH
 
-    echo "${PATH_IN_SYSROOT#"$SYSROOT"}"
+    if [[ "$PATH_IN_SYSROOT" != "$SYSROOT/"* ]]; then
+        echo "[ERROR] File is outside SYSROOT:"
+        echo "        $PATH_IN_SYSROOT"
+        echo "        SYSROOT=$SYSROOT"
+        exit 1
+    fi
+
+    REL_PATH="${PATH_IN_SYSROOT#"$SYSROOT"}"
+
+    echo "/${REL_PATH#/}"
 }
-
 # ============================================================
 # Copy a file/symlink while preserving the library structure
 # ============================================================
@@ -366,15 +382,19 @@ copy_runtime_file()
 #
 # All required entries are copied.
 # ============================================================
-
 copy_library_chain()
 {
     local SOURCE="$1"
+
     local CURRENT="$SOURCE"
+
+    # The target path is based on the original sysroot path.
+    local REL_PATH
+    REL_PATH="$(sysroot_to_rootfs_path "$SOURCE")"
 
     while true; do
 
-        copy_runtime_file "$CURRENT"
+        copy_runtime_file "$CURRENT" 
 
         if [ ! -L "$CURRENT" ]; then
             break
@@ -383,23 +403,58 @@ copy_library_chain()
         local LINK_TARGET
         LINK_TARGET="$(readlink "$CURRENT")"
 
+        local NEXT
+
         if [[ "$LINK_TARGET" = /* ]]; then
-            CURRENT="$SYSROOT$LINK_TARGET"
+            NEXT="$SYSROOT$LINK_TARGET"
         else
-            CURRENT="$(dirname "$CURRENT")/$LINK_TARGET"
+            NEXT="$(dirname "$CURRENT")/$LINK_TARGET"
         fi
 
-        if [ ! -e "$CURRENT" ] && [ ! -L "$CURRENT" ]; then
+        NEXT="$(realpath -m "$NEXT")"
+
+        if [ ! -e "$NEXT" ] && [ ! -L "$NEXT" ]; then
             echo
-            echo "[ERROR] Broken library symlink:"
-            echo "        $SOURCE"
-            echo "        -> $CURRENT"
+            echo "============================================================"
+            echo "[ERROR] Broken library symlink"
+            echo "============================================================"
+            echo
+            echo "Original:"
+            echo "  $SOURCE"
+            echo
+            echo "Current:"
+            echo "  $CURRENT"
+            echo
+            echo "Link:"
+            echo "  -> $LINK_TARGET"
+            echo
+            echo "Resolved:"
+            echo "  $NEXT"
+            echo
             exit 1
         fi
 
+        CURRENT="$NEXT"
+
+        # The next symlink target belongs in the SAME target
+        # directory as the original library chain.
+        #
+        # Example:
+        #
+        # /lib/libc.so.6 -> libc-2.41.so
+        #
+        # becomes:
+        #
+        # /lib/libc.so.6
+        # /lib/libc-2.41.so
+        #
+        local TARGET_DIR
+        TARGET_DIR="$(dirname "$REL_PATH")"
+
+        REL_PATH="$TARGET_DIR/$(basename "$CURRENT")"
+
     done
 }
-
 
 # ============================================================
 # Resolve a library recursively

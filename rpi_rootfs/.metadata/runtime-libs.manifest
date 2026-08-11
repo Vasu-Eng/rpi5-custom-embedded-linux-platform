@@ -2,8 +2,6 @@
 /lib/libatomic.so.1
 /lib/libatomic.so.1.2.0
 /lib/libc.so.6
-/lib/libm.so.6
-/lib/libresolv.so.2
 /usr/lib/libnuma.so.1
 /usr/lib/libnuma.so.1.0.0
 /usr/lib/libz.so.1

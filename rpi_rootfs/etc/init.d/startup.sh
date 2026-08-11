@@ -1,6 +1,7 @@
 #!/bin/ash
 
-# Reserved for future services
+# Reserved for future service
+export LD_LIBRARY_PATH=/lib:/usr/lib
 
 echo "Bringing up Ethernet..."
 ifconfig eth0 up
