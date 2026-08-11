@@ -1,470 +1,1053 @@
-# Raspberry Pi 5 BSP Development and Embedded Linux Bring-Up
+# Raspberry Pi 5 Custom Embedded Linux BSP
 
-A hands-on Board Support Package (BSP) and Embedded Linux development project focused on understanding and building a complete Linux software stack from first principles.
+A custom Embedded Linux BSP platform for Raspberry Pi 5 built around a fixed AArch64 toolchain/sysroot and a Raspberry Pi downstream Linux kernel.
 
-This repository documents the engineering process of bringing up a Linux system on Raspberry Pi 5 without initially relying on Buildroot or Yocto. Every subsystem is integrated, debugged, and documented manually to gain a deep understanding of Linux boot architecture, platform bring-up, networking, remote access, root filesystem design, and BSP development workflows.
+The project intentionally separates the **kernel/BSP layer**, **toolchain/sysroot**, **userspace packages**, **root filesystem**, and **boot-image generation** instead of hiding the complete platform behind a monolithic build system.
 
-The long-term objective is to evolve this platform into a production-style Embedded Linux distribution using Buildroot and Yocto while documenting every engineering decision, debugging session, and architectural milestone.
-
----
-
-# Project Goals
-
-This repository is designed to demonstrate practical skills commonly required for:
-
-* Embedded Linux Engineer
-* BSP Engineer
-* Firmware Engineer
-* Linux Systems Engineer
-* Platform Software Engineer
-
-Target skill areas include:
-
-* Linux Boot Process
-* ARM64 Platform Bring-Up
-* Device Tree
-* Root Filesystem Engineering
-* Networking
-* Secure Remote Access
-* Build Systems
-* Debugging Methodology
-* Production Linux BSP Workflows
+> **Project philosophy:** Do not hide the platform. Build it, understand it, debug it, and make it reproducible.
 
 ---
 
-# Current Features
+## 1. Motivation
 
-## Linux Bring-Up
+A Raspberry Pi can be made to boot Linux with a few commands, or an embedded Linux image can be generated with Buildroot/Yocto. Those approaches are useful, but they can hide the relationships between:
 
-* ARM64 Linux Kernel Boot
-* Raspberry Pi 5 Device Tree Integration
-* UART Console Bring-Up
-* BusyBox Userspace
-* Custom Initramfs
-* Custom `/init`
-* Interactive Shell Access
+- toolchain and sysroot
+- kernel and kernel configuration
+- Raspberry Pi downstream kernel changes
+- Device Tree and overlays
+- userspace packages
+- dynamic libraries
+- initramfs
+- boot files
+- partitioning
+- final SD-card image
 
-## Root Filesystem
+The goal of this project is to explicitly control those layers and build a reusable Raspberry Pi 5 BSP/platform foundation.
 
-* BusyBox-based Root Filesystem
-* Custom Directory Structure
-* Initramfs Packaging
-* Ownership and Permission Handling
-* Root User Configuration
-
-## Networking
-
-* Ethernet Bring-Up
-* DHCP Client Integration (`udhcpc`)
-* Static IP Fallback Mechanism
-* Network Diagnostics
-* Interface Validation
-
-## Remote Access
-
-* Dropbear SSH Server
-* Public Key Authentication
-* Host Key Generation
-* Authorized Keys Management
-* SSH Permission Validation
-* Headless Remote Access
+The project is intended to demonstrate practical BSP/platform engineering rather than simply running an application on Raspberry Pi OS.
 
 ---
 
-# Engineering Topics Investigated
+## 2. Architecture
 
-This project includes practical investigation and debugging of:
+```text
+                    CUSTOM EMBEDDED LINUX BSP
+                               │
+              ┌────────────────┴────────────────┐
+              │                                 │
+              ▼                                 ▼
+        TOOLCHAIN / SDK                    LINUX KERNEL
+              │                         (Raspberry Pi source)
+              │                                 │
+              │                    ┌────────────┴────────────┐
+              │                    │                         │
+              │                    ▼                         ▼
+              │               PREEMPT_RT             Device Tree / DTB
+              │                    │                    / Overlays
+              │                    ▼                 (LCD / UART /
+              │              Custom Kernel            SPI / I2C)
+              │                    │                         │
+              │                    │                         ▼
+              │                    │                    DTB + Overlays
+              │                    │                         │
+              │                    └────────────┬────────────┘
+              │                                 │
+              │                                 ▼
+              │                            Kernel + DTB
+              │                                 │
+              └────────────────┬────────────────┘
+                               │
+                               ▼
+                        PACKAGE BUILDS
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+           BusyBox          Dropbear         rt-tests
+              │                │                │
+              └────────────────┼────────────────┘
+                               │
+                               ▼
+                      PACKAGE INSTALLATION
+                               │
+                               ▼
+                   RUNTIME DEPENDENCY RESOLUTION
+                               │
+                               ▼
+                            ROOTFS
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+            /bin             /sbin           /usr/bin
+              │                │                │
+              ├────────────────┼────────────────┤
+              │                                 │
+            /etc                            /usr/lib
+              │                                 │
+              └────────────────┬────────────────┘
+                               │
+                               ▼
+                       INITRAMFS ROOTFS
+                          rootfs.cpio.gz
+                               │
+                  ┌────────────┴────────────┐
+                  │                         │
+                  ▼                         ▼
+             BOOT FILES                KERNEL + DTB
+          config.txt / overlays        Kernel Image
+                  │                         │
+                  └────────────┬────────────┘
+                               │
+                               ▼
+                      BOOTABLE DISK IMAGE
+                               │
+                               ▼
+                       FAT32 + MBR PARTITION
+                               │
+                               ▼
+                     rpi5_custom.img
+```
 
-* Linux Boot Flow
-* Initramfs Internals
-* BusyBox Integration
-* Device Tree Loading
-* UART Routing
-* Linux Permissions
-* Ownership Handling inside CPIO Images
-* SSH Authentication Flow
-* Public / Private Key Cryptography
-* DHCP Client Operation
-* Embedded Linux Networking
-* Filesystem Mounting
-* Pseudo Filesystems
+The important separation is:
+
+```text
+Fixed SDK / Sysroot
+        │
+        ├──────────────► Userspace platform
+        │                 ├── BusyBox
+        │                 ├── Dropbear
+        │                 ├── rt-tests
+        │                 └── RootFS
+        │
+        └──────────────► Kernel / BSP
+                          ├── PREEMPT_RT
+                          ├── Device Tree
+                          ├── DT overlays
+                          └── Drivers
+```
+
+The kernel/BSP can evolve while the userspace build foundation remains stable.
 
 ---
 
-# Platform Roadmap
+## 3. Buildroot vs This Architecture
 
-## v0.0 — Linux Bring-Up Foundation
+Buildroot is a mature system for generating complete embedded Linux systems. It can manage toolchains, kernels, packages, root filesystems and images.
 
-**Status:** Complete
+This project is **not intended to replace Buildroot**. It is intentionally more explicit and educational at the platform/BSP layer.
 
-### Features
+### Buildroot-oriented model
 
-* ARM64 Linux kernel boot
-* BusyBox userspace
-* Custom root filesystem
-* Custom `/init`
-* Initramfs (`rootfs.cpio.gz`)
-* UART console bring-up
-* Device Tree integration
-* Interactive shell access
+```text
+                 Buildroot
+                    │
+       ┌────────────┼────────────┐
+       │            │            │
+   Toolchain      Kernel       Packages
+       │            │            │
+       └────────────┼────────────┘
+                    │
+                  RootFS
+                    │
+              Image generation
+                    │
+                    ▼
+                SD Image
+```
 
-### Skills Demonstrated
+### This project's model
 
-* Linux boot flow
-* Initramfs architecture
-* BusyBox integration
-* Root filesystem construction
-* ARM64 bring-up
+```text
+                TOOLCHAIN / SDK
+                       │
+        ┌──────────────┴──────────────┐
+        │                             │
+        ▼                             ▼
+     Userspace                    Kernel / BSP
+        │                             │
+     Packages                    PREEMPT_RT
+        │                       Device Tree
+     RootFS                     Kernel config
+        │                       Drivers
+        │                             │
+        └──────────────┬──────────────┘
+                       │
+                       ▼
+                 Boot packaging
+                       │
+                       ▼
+                  SD image
+```
+
+The key design choice is a **fixed target SDK/sysroot** combined with an independently developed Raspberry Pi downstream kernel/BSP.
 
 ---
 
-## v0.1 — Networking and Remote Access
+## 4. Benefits
 
-**Status:** Complete
+### Stable userspace foundation
 
-### Features
+Packages are built against the same:
 
-* Ethernet bring-up
-* DHCP client integration (`udhcpc`)
-* Static IP fallback
-* Dropbear SSH server
-* Public-key authentication
-* Headless remote access
+```text
+CROSS_COMPILE
+SYSROOT
+```
 
-### Skills Demonstrated
+This provides a consistent userspace build environment.
 
-* Linux networking
-* DHCP debugging
-* SSH authentication
-* Embedded Linux security
-* System integration
+### Independent kernel development
+
+Kernel work can continue independently:
+
+```text
+Raspberry Pi kernel
+       ↓
+kernel configuration
+       ↓
+PREEMPT_RT
+       ↓
+Device Tree / overlays
+       ↓
+drivers
+       ↓
+Kernel + DTB
+```
+
+while the SDK, BusyBox, Dropbear and rootfs architecture remain stable.
+
+### Explicit BSP ownership
+
+The project explicitly owns:
+
+- kernel configuration
+- Device Tree
+- DT overlays
+- kernel image
+- initramfs
+- boot configuration
+- runtime dependencies
+- bootable image generation
+
+### Debuggable build layers
+
+```text
+SDK
+ ↓
+Packages
+ ↓
+RootFS
+ ↓
+Initramfs
+ ↓
+BootFS
+ ↓
+Bootable image
+```
+
+Each layer can be built and investigated independently.
+
+### Reusable platform foundation
+
+A stable Raspberry Pi 5 platform can support different product variants:
+
+```text
+                RPI5 BSP PLATFORM
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+     Product A      Product B      Product C
+        │              │              │
+       LCD            CAN            SPI
+       UART           Motor          Sensor
+       SSH            Control        Camera
+```
 
 ---
 
-## v0.2 — Device Tree Deep Dive
+## 5. Repository Structure
 
-### Objectives
+```text
+rpi5-custom-embedded-linux-platform/
+│
+├── Bootable/
+│   └── rpi5_custom.img
+│
+├── docs/
+│   └── investigation logs release-notes changelog fundamentals Images ..
+│
+├── kernel/
+│   └── Raspberry Pi Linux kernel
+│
+├── lib/
+│   ├── banner
+│   └── rpi5_image.sh
+│
+├── packages/
+│   ├── busybox/
+│   │   └── build.sh
+│   ├── dropbear-2026.91/
+│   │   └── build.sh
+│   └── rt-tests/
+│       └── build.sh
+│
+├── rpi_bootfs/
+│   ├── bcm2712-rpi-5-b.dtb
+│   ├── cmdline.txt
+│   ├── config.txt
+│   ├── overlays/
+│   ├── rootfs.cpio.gz
+│   └── kernel image
+│
+├── rpi_rootfs/
+│   ├── bin/
+│   ├── dev/
+│   ├── etc/
+│   ├── lib/
+│   ├── proc/
+│   ├── root/
+│   ├── sbin/
+│   ├── sys/
+│   ├── tmp/
+│   ├── usr/
+│   └── var/
+│
+├── scripts/
+│   ├── build_rootfs_pipeline.sh
+│   ├── mount_rootfs_zip.sh
+│   ├── resolve-runtime-deps.sh
+│   ├── rootfs-builder.sh
+│   └── rootfs_safe_clean.sh
+│
+├── sdk/
+│   |
+|   |── environment-setup
+|   |
+|   |──  custom-sdk
+|   |
+|   └──  official-sdk
+│
+└── README.md
+```
 
-* Analyze Raspberry Pi 5 Device Tree hierarchy
-* Enable/disable peripherals
-* UART routing investigation
-* Overlay development
-* Custom DTS modifications
+---
 
-### Deliverable
+## 6. Build Pipeline and Shell Scripts
+
+### `scripts/build_rootfs_pipeline.sh`
+
+Main orchestration script.
+
+```bash
+./scripts/build_rootfs_pipeline.sh custom-sdk
+```
+
+For rootfs plus bootable image:
+
+```bash
+./scripts/build_rootfs_pipeline.sh custom-sdk --bootable
+```
+
+The pipeline performs:
+
+```text
+SDK setup
+   ↓
+BusyBox build
+   ↓
+ELF / page-size validation
+   ↓
+Dropbear build
+   ↓
+rt-tests build
+   ↓
+Safe rootfs cleanup
+   ↓
+RootFS construction
+   ↓
+Runtime dependency resolution
+   ↓
+Banner installation
+   ↓
+rpi_bootfs generation
+   ↓
+Optional bootable image
+```
+
+### `packages/busybox/build.sh`
+
+Builds BusyBox for the target architecture.
+
+BusyBox is built statically because it provides the early userspace shell/init environment and should not depend on the dynamic loader during early boot.
+
+### `packages/dropbear-2026.91/build.sh`
+
+Cross-compiles and prepares Dropbear for lightweight SSH access.
+
+### `packages/rt-tests/build.sh`
+
+Builds the Linux real-time test utilities used for PREEMPT_RT validation.
+
+### `scripts/rootfs_safe_clean.sh`
+
+Safely cleans generated rootfs content before rebuilding.
+
+### `scripts/rootfs-builder.sh`
+
+Installs/builds the package contents and constructs the target root filesystem hierarchy.
+
+### `scripts/resolve-runtime-deps.sh`
+
+Resolves dynamic shared-library dependencies required by dynamically linked userspace applications and copies the required runtime libraries into the target rootfs.
+
+### `scripts/mount_rootfs_zip.sh`
+
+Packages the root filesystem into the initramfs artifact:
+
+```text
+rootfs.cpio.gz
+```
+
+and prepares the Raspberry Pi boot filesystem.
+
+### `lib/banner`
+
+Source-controlled login/system banner.
+
+It is installed into:
+
+```text
+/usr/bin/banner
+```
+
+so regenerating the rootfs does not permanently delete the customization.
+
+### `lib/rpi5_image.sh`
+
+Independent bootable image generator.
+
+If `rpi_bootfs` already exists:
+
+```bash
+./lib/rpi5_image.sh
+```
+
+creates:
+
+```text
+Bootable/rpi5_custom.img
+```
+
+---
+
+## 7. SDK / Sysroot
+
+The SDK is loaded through:
+
+```text
+sdk/environment-setup
+```
+
+The pipeline obtains:
+
+```text
+SYSROOT
+CROSS_COMPILE
+```
+
+Example target toolchain:
+
+```text
+aarch64-buildroot-linux-gnu-gcc
+```
+
+The important design rule is:
+
+```text
+SDK / Sysroot = stable userspace build foundation
+Kernel / BSP  = independently evolving platform layer
+```
+
+---
+
+## 8. Runtime Dependency Investigation
+
+Dynamically linked applications require shared libraries.
+
+For example:
+
+```text
+cyclictest
+    │
+    └── libnuma.so.1
+```
+
+If the library exists under:
+
+```text
+/usr/lib/libnuma.so.1
+```
+
+but the runtime loader does not search `/usr/lib`, the application fails with:
+
+```text
+error while loading shared libraries:
+libnuma.so.1: cannot open shared object file
+```
+
+The current minimal runtime environment therefore includes:
+
+```sh
+export LD_LIBRARY_PATH=/lib:/usr/lib
+```
+
+The dependency resolver also places required libraries into the generated rootfs.
+
+---
+
+## 9. ELF Page-Size Investigation
+
+The project investigated a kernel/userspace compatibility problem related to ELF `LOAD` segment alignment.
+
+The SDK is inspected using:
+
+```bash
+readelf -l "$SYSROOT/lib/libc.so.6"
+```
+
+Relevant values:
+
+```text
+0x1000   = 4 KB
+0x4000   = 16 KB
+0x10000  = 64 KB
+```
+
+The investigation established that the tested SDK binaries were compatible with page sizes of **16 KB and larger**, while the tested 4-KB configuration was incompatible.
+
+The project therefore checks the actual ELF `LOAD` alignment rather than depending only on target header macros.
+
+Detailed investigation logs are kept under:
+
+```text
+docs/
+```
+
+---
+
+## 10. RootFS
+
+The generated root filesystem contains:
+
+```text
+/bin
+/sbin
+/usr/bin
+/usr/sbin
+/etc
+/lib
+/usr/lib
+/dev
+/proc
+/sys
+/tmp
+/root
+/var
+```
+
+It includes:
+
+- BusyBox
+- Dropbear
+- rt-tests
+- runtime shared libraries
+- startup scripts
+- login configuration
+- system banner
+- required runtime files
+
+The final initramfs is:
+
+```text
+rootfs.cpio.gz
+```
+
+---
+
+## 11. Init / Startup
+
+The target uses BusyBox init.
+
+Example `inittab`:
+
+```text
+::sysinit:/etc/init.d/rcS
+::once:/usr/bin/banner
+console::askfirst:/bin/cttyhack /bin/login
+::ctrlaltdel:/sbin/poweroff
+::shutdown:/bin/umount -a -r
+::shutdown:/sbin/swapoff -a
+```
+
+The boot userspace flow is:
+
+```text
+Linux kernel
+     ↓
+initramfs
+     ↓
+BusyBox init
+     ↓
+/etc/init.d/rcS
+     ↓
+/usr/bin/banner
+     ↓
+/bin/login
+```
+
+---
+
+## 12. Kernel / BSP Modifications
+
+The kernel side is based on the Raspberry Pi downstream Linux kernel rather than treating the target as a generic upstream ARM64 board.
+
+The BSP layer contains:
+
+```text
+Raspberry Pi kernel source
+        │
+        ├── Kernel configuration
+        │
+        ├── PREEMPT_RT
+        │
+        ├── Device Tree
+        │
+        ├── Device Tree overlays
+        │
+        └── Hardware-specific drivers/configuration
+```
+
+### PREEMPT_RT
+
+PREEMPT_RT is used for real-time Linux evaluation.
+
+The validation stack is:
+
+```text
+PREEMPT_RT
+     +
+rt-tests
+     +
+cyclictest
+```
+
+The focus is:
+
+- kernel preemption
+- scheduling latency
+- interrupt/thread behavior
+- cyclictest latency
+- real-time workload evaluation
+
+### Device Tree
+
+The platform uses:
+
+```text
+bcm2712-rpi-5-b.dtb
+overlays/
+```
+
+for hardware configuration such as:
+
+```text
+UART
+SPI
+I2C
+LCD / display
+```
+
+### I2C / Driver Development
+
+I2C is treated as a kernel/BSP concern:
 
 ```text
 Hardware
-   ▼
+   ↓
 Device Tree
-   ▼
+   ↓
+I2C controller/device description
+   ↓
+Kernel driver
+   ↓
+Linux I2C subsystem
+   ↓
+Userspace interface
+```
+
+The same architecture can be extended to SPI, UART, GPIO, CAN, display, touchscreen and sensor drivers.
+
+Where a driver is not yet implemented in this repository, it is treated as future kernel/BSP development rather than claiming completed driver work.
+
+---
+
+## 13. `rpi_bootfs`
+
+The boot filesystem contains:
+
+```text
+rpi_bootfs/
+├── bcm2712-rpi-5-b.dtb
+├── cmdline.txt
+├── config.txt
+├── overlays/
+├── rootfs.cpio.gz
+└── kernel image
+```
+
+This directory represents the content placed onto the FAT32 Raspberry Pi boot partition.
+
+---
+
+## 14. Bootable Image Generation
+
+`lib/rpi5_image.sh` creates:
+
+```text
+Bootable/rpi5_custom.img
+```
+
+The process is:
+
+```text
+Create image
+     ↓
+Create MBR partition table
+     ↓
+Create FAT32 partition
+     ↓
+Attach image through loop device
+     ↓
+Format FAT32
+     ↓
+Mount partition
+     ↓
+Copy rpi_bootfs
+     ↓
+sync
+     ↓
+Verify
+     ↓
+Unmount
+     ↓
+Detach loop device
+```
+
+The resulting raw image can be flashed to an SD card using Raspberry Pi Imager or another raw-image flasher.
+
+> **Warning:** Always verify the target device before writing a raw disk image. Selecting the wrong block device can destroy existing data.
+
+---
+
+## 15. User Manual
+
+### Build rootfs
+
+```bash
+./scripts/build_rootfs_pipeline.sh custom-sdk
+```
+
+### Build rootfs + bootable image
+
+```bash
+./scripts/build_rootfs_pipeline.sh custom-sdk --bootable
+```
+
+Output:
+
+```text
+Bootable/rpi5_custom.img
+```
+
+### Build only the bootable image
+
+If `rpi_bootfs` already exists:
+
+```bash
+./lib/rpi5_image.sh
+```
+
+### Flash
+
+Flash:
+
+```text
+Bootable/rpi5_custom.img
+```
+
+to an SD card using a raw image flashing utility.
+
+### Boot
+
+Insert the SD card into the Raspberry Pi 5 and connect the configured serial console if required.
+
+Expected flow:
+
+```text
 Kernel
-   ▼
-Userspace
+  ↓
+initramfs
+  ↓
+BusyBox init
+  ↓
+startup
+  ↓
+banner
+  ↓
+login
 ```
-
-### Skills Demonstrated
-
-* DTS
-* DTB
-* Overlay mechanism
-* Hardware description
-* BSP configuration
 
 ---
 
-## v0.3 — U-Boot Integration
+## 16. Target Verification
 
-### Objectives
+After boot:
 
-* Build U-Boot from source
-* Boot Linux through U-Boot
-* Configure boot arguments
-* Environment variable management
-* Boot script development
-
-### Deliverable
-
-```text
-Firmware
-   ▼
-U-Boot
-   ▼
-Linux Kernel
-   ▼
-Initramfs
+```bash
+uname -a
 ```
 
-### Skills Demonstrated
+```bash
+uname -r
+```
 
-* Bootloader architecture
-* Linux handoff
-* Embedded boot flow
-* BSP bring-up
+```bash
+ps
+```
+
+Check runtime libraries:
+
+```bash
+ls -l /lib
+ls -l /usr/lib
+```
+
+Check Dropbear:
+
+```bash
+dropbear
+```
+
+Run real-time tests:
+
+```bash
+cyclictest
+```
 
 ---
 
-## v0.4 — Persistent ext4 Root Filesystem
+## 17. Troubleshooting
 
-### Objectives
+### `cyclictest` cannot find `libnuma.so.1`
 
-* Separate boot partition
-* Separate root partition
-* ext4 root filesystem
-* Persistent configuration
-* Persistent user data
+Check:
 
-### Deliverable
-
-```text
-Boot Partition
-   ▼
-Kernel
-   ▼
-Mount ext4 RootFS
-   ▼
-Persistent Linux System
+```bash
+ls -l /usr/lib/libnuma.so.1
 ```
 
-### Skills Demonstrated
+and:
 
-* Linux storage
-* Filesystems
-* Partitioning
-* RootFS management
+```bash
+echo "$LD_LIBRARY_PATH"
+```
 
----
+The minimal environment should contain:
 
-## v0.5 — Linux Driver Development
+```sh
+export LD_LIBRARY_PATH=/lib:/usr/lib
+```
 
-### Objectives
+### Dropbear cannot find `libz.so.1`
 
-* Character driver
-* Sysfs interface
-* GPIO control
-* Device Tree integration
-* Kernel module development
+Check:
 
-### Deliverable
+```bash
+ls -l /usr/lib/libz.so.1
+```
+
+and:
+
+```bash
+echo "$LD_LIBRARY_PATH"
+```
+
+### Kernel fails during early boot
+
+Investigate:
 
 ```text
+kernel configuration
 Device Tree
-   ▼
-Kernel Driver
-   ▼
-Userspace Application
+DT overlays
+ELF LOAD alignment
+dynamic loader
+initramfs contents
 ```
 
-### Skills Demonstrated
+Detailed investigation records are stored under:
 
-* Linux kernel development
-* Driver architecture
-* Kernel APIs
-* Hardware abstraction
-
----
-
-## v1.0 — Buildroot Migration
-
-### Objectives
-
-* Buildroot image generation
-* Cross-compilation workflow
-* Package integration
-* Custom package development
-* Reproducible builds
-
-### Deliverable
-
-Buildroot-managed Embedded Linux distribution.
-
-### Skills Demonstrated
-
-* Embedded build systems
-* Toolchains
-* Distribution generation
+```text
+docs/
+```
 
 ---
 
-## v2.0 — Yocto BSP Development
+## 18. Demo
 
-### Objectives
+### Raspberry Pi 5 Boot Demo
 
-* Custom Yocto layers
-* BitBake recipes
-* Custom images
-* BSP customization
-* Production workflows
+The demo video shows the generated custom Linux platform booting on a Raspberry Pi 5, including the custom kernel and minimal BusyBox-based userspace.
 
-### Deliverable
+**Demo video:**
 
-Production-oriented Embedded Linux BSP.
-
-### Skills Demonstrated
-
-* Yocto Project
-* BSP engineering
-* Layer architecture
-* Industrial Linux workflows
+[Watch the Raspberry Pi 5 Custom Embedded Linux BSP Demo](https://drive.google.com/file/d/1l_-_ZbR9FfEfSW3biwSwsIvMav2swrbX/view?usp=sharing)
 
 ---
 
-## v3.0 — Advanced Platform Engineering
+## 19. Future Scope
 
-### Objectives
+### Kernel
 
-* OTA update framework
-* Secure boot investigation
-* System profiling
-* Performance optimization
-* Upstream contribution workflow
+- Additional kernel configuration
+- Kernel driver development
+- I2C device drivers
+- SPI device drivers
+- GPIO drivers
+- UART development
+- CAN support
+- Sensor integration
+- Display/touchscreen support
 
-### Skills Demonstrated
+### Device Tree
 
-* Production deployment
-* Security
-* Maintainability
-* Open-source contribution
+- Custom board-level DT nodes
+- Additional overlays
+- LCD integration
+- Touch controller integration
+- Camera integration
+- Peripheral bring-up
 
----
+### Real-Time Linux
 
-# Maintainer
+- PREEMPT_RT tuning
+- cyclictest benchmarking
+- IRQ affinity
+- CPU isolation
+- scheduler tuning
+- latency comparison
+- real-time workload testing
 
-**Vasu Kesharwani**
+### Build Infrastructure
 
-Focus Areas:
+- Better dependency tracking
+- Build caching
+- Reproducible builds
+- Automated image validation
+- CI pipeline
+- Automated boot testing
+- Artifact versioning
 
-* Embedded Linux
-* BSP Development
-* ARM64 Platforms
-* Linux Boot Architecture
-* System Bring-Up
-* Embedded Networking
+### Platform Evolution
 
-GitHub:
-https://github.com/Vasu-Eng
-
-LinkedIn:
-https://www.linkedin.com/in/vasudev-kesharwani-466503201/
-
----
-
-# License
-
-This repository is intended for learning, experimentation, BSP development practice, and Embedded Linux engineering research.
-
-
-
-                    CUSTOM EMBEDDED LINUX BSP
-                              │
-        ┌─────────────────────┴─────────────────────┐
-        │                                           │
-     Toolchain                                  Kernel
-        │                                           │
-        ▼                                           ▼
-      SDK                                      Image/DTB
+```text
+Stable BSP Platform
         │
-        ▼
-   Package builds
-        │
-   ┌────┼────────┬─────────┐
-   │    │        │         │
-BusyBox Dropbear rt-tests  ...
-   │    │        │
-   └────┴────────┴─────────┘
-              │
-              ▼
-        package/install/
-              │
-              ▼
-       Runtime dependencies
-              │
-              ▼
-          ROOTFS
-              │
-              ├── /bin
-              ├── /sbin
-              ├── /usr/bin
-              ├── /usr/lib
-              ├── /etc
-              └── /lib
-              │
-              ▼
-        Root filesystem image
-              │
-              ▼
-      Boot files + Kernel + DTB
-              │
-              ▼
-       Partitioned disk image
-              │
-              ▼
-      rpi5-custom-linux.img
+        ├── Platform SDK
+        ├── Kernel
+        ├── Device Tree
+        ├── RootFS
+        ├── Package layer
+        └── Image generation
+                │
+                ▼
+          Product variants
+```
 
+---
 
+## 20. Current Status
 
-rpi_rootfs/
-├── bin/              ← package binaries
-├── sbin/             ← package binaries
-├── lib/              ← runtime libraries
-│
-├── usr/
-│   ├── bin/          ← package binaries
-│   ├── sbin/         ← package binaries
-│   ├── lib/          ← runtime libraries
-│   └── share/        ← package data/manpages
-│
-├── etc/              ← YOUR CONFIG → preserve
-├── root/             ← YOUR DATA → preserve
-├── var/              ← runtime/persistent data → preserve
-├── home/             ← preserve
-│
-├── dev/              ← mount/runtime
-├── proc/             ← mountpoint
-├── sys/              ← mountpoint
-└── tmp/              ← runtime
+### Working
 
+- [x] Raspberry Pi 5 boot
+- [x] ARM64 cross-compilation
+- [x] Fixed SDK/sysroot integration
+- [x] Custom Linux kernel
+- [x] Raspberry Pi downstream kernel
+- [x] Device Tree / DTB
+- [x] Device Tree overlays
+- [x] PREEMPT_RT configuration
+- [x] BusyBox userspace
+- [x] Static BusyBox
+- [x] Custom initramfs
+- [x] Dropbear
+- [x] rt-tests
+- [x] Runtime dependency resolution
+- [x] Custom system banner
+- [x] RootFS build pipeline
+- [x] Boot filesystem generation
+- [x] FAT32 boot partition generation
+- [x] Bootable SD-card image generation
+- [x] ELF page-size / LOAD-alignment investigation
 
+### In Progress
 
-                    rpi_rootfs
+- [ ] Additional kernel drivers
+- [ ] I2C device-driver development
+- [ ] More Device Tree integrations
+- [ ] Real-time latency optimization
+- [ ] Automated validation
+- [ ] CI-based image generation
+- [ ] Product-specific BSP variants
+
+---
+
+## 21. Final Architecture
+
+```text
+                  FIXED SDK / SYSROOT
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+              ▼                         ▼
+        USERSPACE PLATFORM          KERNEL BSP
+              │                         │
+        ┌─────┼─────┐             ┌─────┼─────┐
+        │     │     │             │     │     │
+     BusyBox Dropbear rt-tests   RT    DT    Drivers
+        │     │     │             │     │     │
+        └─────┼─────┘             └─────┼─────┘
+              │                         │
+              ▼                         ▼
+            ROOTFS                 Kernel + DTB
+              │                         │
+              └──────────┬──────────────┘
                          │
-          ┌──────────────┴──────────────┐
-          │                             │
-    PACKAGE OWNERSHIP              RUNTIME OWNERSHIP
-          │                             │
- /bin/* /sbin/*                    /lib/*
- /usr/bin/*                        selected /usr/lib/*
- /usr/sbin/*                      selected libraries
- /usr/share/*
-          │                             │
-          ▼                             ▼
- package manifest              runtime manifest
+                         ▼
+                  BOOT FILESYSTEM
+                         │
+                         ▼
+                  FAT32 + MBR IMAGE
+                         │
+                         ▼
+               rpi5_custom.img
+                         │
+                         ▼
+                   Raspberry Pi 5
+```
 
+The focus is not simply running Linux on Raspberry Pi.
 
-scripts/
-├── rootfs-builder.sh
-├── resolve-runtime-deps.sh
-└── rootfs-ownership.sh        ← common ownership logic
-
-rpi_rootfs/
-└── .metadata/
-    ├── package-files.manifest
-    └── runtime-libs.manifest
-
-
-ELF
- ↓
-resolve dependencies
- ↓
-build CURRENT runtime manifest
- ↓
-compare with PREVIOUS runtime manifest
- ↓
- ├── same SHA       → SKIP
- ├── different SHA  → WARNING + ask overwrite
- ├── new library    → COPY
- └── old runtime-owned library
-          ↓
-       WARNING + ask removal
-
-
+The focus is understanding and controlling the platform that makes Linux run on the target hardware.

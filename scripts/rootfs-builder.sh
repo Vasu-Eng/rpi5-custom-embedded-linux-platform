@@ -667,6 +667,20 @@ fi
 
 mv "$NEW_MANIFEST" "$OLD_MANIFEST"
 
+# ============================================================
+# Install system banner
+# ============================================================
+
+echo "Installing system banner"
+
+mkdir -p "$ROOTFS/usr/bin"
+
+cp "$PROJECT_ROOT/lib/banner" \
+   "$ROOTFS/usr/bin/banner"
+
+chmod +x "$ROOTFS/usr/bin/banner"
+
+
 
 # ============================================================
 # Summary
@@ -692,5 +706,7 @@ echo "  $ROOTFS_DIR"
 echo
 echo "============================================================"
 echo
+
+
 
 

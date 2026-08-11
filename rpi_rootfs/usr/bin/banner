@@ -1,0 +1,29 @@
+#!/bin/sh
+
+echo
+echo "============================================================"
+echo "              RPI5 CUSTOM EMBEDDED LINUX"
+echo "============================================================"
+echo
+echo "  Board        : Raspberry Pi 5"
+echo "  Architecture : $(uname -m)"
+echo "  Kernel       : $(uname -r)"
+echo "  Hostname     : $(hostname)"
+echo "  Uptime       : $(uptime 2>/dev/null | sed 's/.*up /up /')"
+echo
+echo "  RootFS       : BusyBox"
+echo "  Init         : BusyBox init"
+echo "  SSH          : Dropbear"
+echo "  RT Tests     : rt-tests"
+echo
+echo "------------------------------------------------------------"
+echo "  BSP          : Custom Raspberry Pi 5 BSP"
+echo "  Boot         : Raspberry Pi Firmware + DTB"
+echo "  RootFS       : initramfs"
+echo "  ELF ABI      : LOAD alignment validated during build"
+echo "------------------------------------------------------------"
+echo
+echo "  System ready."
+echo
+echo "============================================================"
+echo
