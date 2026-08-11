@@ -1,12 +1,62 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
+# ============================================================
+# Project Root
+# ============================================================
+
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SDK_NAME="${SDK_NAME:-custom-sdk}"
+
+# ============================================================
+# Arguments
+#
+# Usage:
+#
+#   ./build_rootfs_pipeline.sh <SDK_NAME>
+#   ./build_rootfs_pipeline.sh <SDK_NAME> --bootable
+#
+# ============================================================
+
+if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
+    echo
+    echo "Usage:"
+    echo "  $0 <SDK_NAME>"
+    echo "  $0 <SDK_NAME> --bootable"
+    echo
+    exit 1
+fi
+
+SDK_NAME="$1"
+
+CREATE_BOOTABLE_IMAGE=false
+
+if [[ "${2:-}" == "--bootable" ]]; then
+    CREATE_BOOTABLE_IMAGE=true
+elif [[ "$#" -eq 2 ]]; then
+    echo "[ERROR] Unknown option: $2"
+    echo
+    echo "Usage:"
+    echo "  $0 <SDK_NAME>"
+    echo "  $0 <SDK_NAME> --bootable"
+    exit 1
+fi
+
+# ============================================================
+# Paths
+# ============================================================
+
 SDK_SETUP="$PROJECT_ROOT/sdk/environment-setup"
 
 ROOTFS="$PROJECT_ROOT/rpi_rootfs"
+BOOTFS="$PROJECT_ROOT/rpi_bootfs"
 PACKAGES="$PROJECT_ROOT/packages"
+
+# ============================================================
+# Load reusable libraries
+# ============================================================
+
+source "$PROJECT_ROOT/lib/rpi5_image.sh"
 
 step() {
     echo
@@ -198,6 +248,21 @@ step "[9/9] Creating rpi_bootfs"
 
 run "$PROJECT_ROOT/scripts/mount_rootfs_zip.sh"
 
+
+# ============================================================
+# Optional: Create Bootable Image
+# ============================================================
+
+if [[ "$CREATE_BOOTABLE_IMAGE" == true ]]; then
+
+    step "Creating Bootable SD Card Image"
+
+    create_rpi5_bootable_image "$PROJECT_ROOT"
+
+fi
+
+
+
 # ============================================================
 # Final summary
 # ============================================================
@@ -206,17 +271,30 @@ echo
 echo "============================================================"
 echo " PIPELINE COMPLETE"
 echo "============================================================"
+e
+echo "SDK:"
+echo "  $SDK_NAME"
+
 echo
 echo "Rootfs:"
 echo "  $ROOTFS"
+
 echo
 echo "Bootfs:"
-echo "  $PROJECT_ROOT/rpi_bootfs"
-echo
+echo "  $BOOTFS"
 
-if [[ -f "$PROJECT_ROOT/rpi_bootfs/rootfs.cpio.gz" ]]; then
-    ls -lh "$PROJECT_ROOT/rpi_bootfs/rootfs.cpio.gz"
+if [[ -f "$BOOTFS/rootfs.cpio.gz" ]]; then
+    echo
+    echo "Rootfs archive:"
+    ls -lh "$BOOTFS/rootfs.cpio.gz"
+fi
+
+if [[ "$CREATE_BOOTABLE_IMAGE" == true ]]; then
+    echo
+    echo "Bootable Image:"
+    echo "  $PROJECT_ROOT/Bootable/rpi5_custom.img"
 fi
 
 echo
 echo "All requested steps completed successfully."
+echo
