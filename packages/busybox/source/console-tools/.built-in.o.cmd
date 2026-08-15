@@ -1,1 +1,1 @@
-cmd_console-tools/built-in.o :=  rm -f console-tools/built-in.o; aarch64-buildroot-linux-gnu-ar rcs console-tools/built-in.o
+cmd_console-tools/built-in.o :=  rm -f console-tools/built-in.o; ar rcs console-tools/built-in.o

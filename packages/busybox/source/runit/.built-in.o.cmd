@@ -1,1 +1,1 @@
-cmd_runit/built-in.o :=  rm -f runit/built-in.o; aarch64-buildroot-linux-gnu-ar rcs runit/built-in.o
+cmd_runit/built-in.o :=  rm -f runit/built-in.o; ar rcs runit/built-in.o

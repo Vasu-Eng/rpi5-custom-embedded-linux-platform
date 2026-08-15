@@ -258,7 +258,7 @@ echo
 make \
     ARCH=arm64 \
     CROSS_COMPILE="${CROSS_COMPILE}" \
-     LDFLAGS="--static" \
+    LDFLAGS="--static" \
     -j"$(nproc)"
 
 
